@@ -1,0 +1,21 @@
+﻿:root {
+    --avatar-size: 2rem;
+    /* change this value anything, e.g., 100px, 10rem, etc. */
+}
+
+.circle {
+    background-color: #FFBBD3;
+    border-radius: 50%;
+    height: var(--avatar-size);
+    text-align: center;
+    width: var(--avatar-size);
+    flex-grow: 0 !important;
+    display: grid !important;
+}
+
+.initials {
+    font-size: calc(var(--avatar-size) / 2); /* 50% of parent */
+    line-height: 1;
+    top: calc(var(--avatar-size) / 4); /* 25% of parent */
+    position: initial;
+}

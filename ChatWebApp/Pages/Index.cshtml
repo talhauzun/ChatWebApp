@@ -1,0 +1,124 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+<link href="~/css/avartar.css" rel="stylesheet" />
+<div class="alert alert-warning alert-dismissible d-none" id="errorAlert" role="alert">
+    <span data-bind="text:serverInfoMessage"></span>
+    <button type="button" class="close" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+
+<div class="app">
+
+    <div class="main-content" data-bind="visible: joinedRoom().length == 0">
+        <span class="m-auto">
+            Oda Seçin!
+        </span>
+    </div>
+    <div class="main-content" data-bind="visible: joinedRoom().length > 0">
+        <div class="header">
+            <h5 id="joinedRoom" data-bind="text: joinedRoom()">Lobby</h5>
+            <button type="button" class="btn btn-link" data-toggle="modal" data-target="#remove-room-modal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="chat-body">
+            <ul class="list-unstyled" data-bind="foreach: chatMessages">
+                <li>
+                    <div class="chat-message d-flex" data-bind="css: $data.isMine() === true ? 'ismine' : 'isother'">
+                        <div class="left-side">
+                            <div class="circle" style="margin: 10px; color:white;">
+                                <span class="initials" style="margin-top: 7px;" data-bind="text: $data.avatar()"></span>
+                            </div>
+                        </div>
+                        <div class="message-content d-flex flex-column">
+                            <div class="d-flex justify-content-between">
+                                <span class="author" data-bind="text:$data.from"></span>
+                                <span class="timestamp">
+                                    <i class="far fa-clock"></i>
+                                    <span data-bind="text:$data.timestamp"></span>
+                                </span>
+                            </div>
+                            <span class="content" data-bind="html:$data.content"></span>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        <div class="chat-input">
+            <input id="chat-message" type="text" value="" data-bind="value:message, valueUpdate: 'afterkeydown', event: { keypress: onEnter }" placeholder="Bir mesaj yazın" />
+        </div>
+    </div>
+    <div class="sidebar">
+        <div class="header">
+            <h5>Aktif Odalar</h5>
+            <a href="#" id="create-room" data-toggle="modal" data-target="#create-room-modal">
+                <i class="fas fa-plus"></i>
+            </a>
+        </div>
+        <ul class="rooms list-unstyled" id="room-list" data-bind="foreach: chatRooms">
+            <li><a href="#" data-bind="text: $data.name, attr: { 'data-roomId': $data.id }, click: $parent.joinRoom.bind($data), css: { active: $root.joinedRoom() == $data.name()}"></a></li>
+        </ul>
+        <div class="profile">
+            <div>
+                <div class="circle">
+                    <span class="initials" data-bind="text: avartarName"></span>
+                </div>
+                <a href="#" style="margin-left:10px" data-bind="text: myName"></a>
+            </div>
+            <form class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="/" method="post">
+                <button type="submit" class="btn-sign-out"><i class="fas fa-sign-out-alt"></i></button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="create-room-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Oda Aç</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="text" class="form-control" id="roomName" placeholder="Oda Adı">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Kapat</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal" data-bind="click: createRoom">Oluştur</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="remove-room-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Oda Sil</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Odayı silmek istediğinize emin misiniz?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Kapat</button>
+                <button type="button" class="btn btn-danger" data-dismiss="modal" data-bind="click: deleteRoom">Sil</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/knockout/knockout-latest.min.js"></script>
+    <script src="~/js/signalr/dist/browser/signalr.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/chat.js" asp-append-version="true"></script>
+}

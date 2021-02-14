@@ -338,3 +338,8 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
+/ChatWebApp/wwwroot/js/signalr/dist/browser
+/ChatWebApp/wwwroot/lib/knockout
+/ChatWebApp/wwwroot/css/_content.css
+/ChatWebApp/wwwroot/css/_content.min.css
+/ChatWebApp/wwwroot/css/site.min.css

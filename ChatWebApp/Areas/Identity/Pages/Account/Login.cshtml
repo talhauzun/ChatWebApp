@@ -1,0 +1,25 @@
+﻿@page
+@model LoginModel
+
+@{
+    ViewData["Title"] = "Giriş Ekranı";
+}
+
+<div class="d-flex justify-content-center align-items-center vh-100">
+    <div class="login-container">
+        <img class="profile-avatar" src="//ssl.gstatic.com/accounts/ui/avatar_2x.png" />
+        <form id="account" method="post">
+            <div asp-validation-summary="All" class="text-danger"></div>
+            <div class="form-group">
+                <input asp-for="Input.UserName" placeholder="NickName" class="form-control" />
+                <span asp-validation-for="Input.UserName" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-sign-in">Giriş Yap</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
