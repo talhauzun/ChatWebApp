@@ -7,7 +7,7 @@
         viewModel.userList();
         setTimeout(function () {
             if (viewModel.chatRooms().length > 0) {
-                viewModel.joinRoom(viewModel.chatRooms()[0]);
+               // viewModel.joinRoom(viewModel.chatRooms()[0]);
             }
         }, 250);
     }).catch(function (err) {

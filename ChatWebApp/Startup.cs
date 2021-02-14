@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using ChatWebApp.Hubs;
 using ChatWebApp.Models;
+using StackExchange.Redis;
 
 namespace ChatWebApp
 {
@@ -47,6 +48,9 @@ namespace ChatWebApp
             services.AddRazorPages();
             services.AddControllers();
             services.AddSignalR();
+
+            services.AddSingleton<IConnectionMultiplexer>(
+            ConnectionMultiplexer.Connect("127.0.0.1:6379"));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
