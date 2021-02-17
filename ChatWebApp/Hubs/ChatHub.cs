@@ -1,10 +1,13 @@
 ﻿using AutoMapper;
 using ChatWebApp.Data;
+using ChatWebApp.Helpers;
 using ChatWebApp.Models;
 using ChatWebApp.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,11 +26,13 @@ namespace ChatWebApp.Hubs
 
         private readonly ApplicationDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IDistributedCache _distributedCache;
 
-        public ChatHub(ApplicationDbContext context, IMapper mapper)
+        public ChatHub(ApplicationDbContext context, IMapper mapper, IDistributedCache distributedCache)
         {
             _context = context;
             _mapper = mapper;
+            _distributedCache = distributedCache;
         }
 
   
@@ -50,6 +55,9 @@ namespace ChatWebApp.Hubs
                     };
                     _context.Messages.Add(msg);
                     _context.SaveChanges();
+
+                    var cacheKey = "Room " + roomName;
+                    await _distributedCache.RemoveAsync(cacheKey);
 
                     // Broadcast the message
                     var messageViewModel = _mapper.Map<Message, MessageViewModel>(msg);
@@ -156,6 +164,8 @@ namespace ChatWebApp.Hubs
                 // Move users back to Lobby
                 await Clients.Group(roomName).SendAsync("onRoomDeleted", string.Format("Room {0} odası silindi.\nAna sayfaya yönlendirildiniz!", roomName));
 
+                var cacheKey = "Room "+ roomName;
+                await _distributedCache.RemoveAsync(cacheKey);
                 // Tell all users to update their room list
                 await Clients.All.SendAsync("removeChatRoom", roomViewModel);
             }
@@ -180,23 +190,50 @@ namespace ChatWebApp.Hubs
             return _Rooms.ToList();
         }
 
-        public IEnumerable<UserViewModel> GetUsers(string roomName)
+        public async Task<IEnumerable<UserViewModel>> GetUsersAsync(string roomName)
         {
-            return _Connections.Where(u => u.CurrentRoom == roomName).ToList();
+            var cacheKey = "GetUsers " + roomName;
+            var data = _distributedCache.Get<IEnumerable<UserViewModel>>(cacheKey);
+            if (data == null)
+            {
+                data = _Connections.Where(u => u.CurrentRoom == roomName).ToList();
+                await _distributedCache.SetDataAsync(cacheKey, data, (int)EnumDate.TenMinute);
+            }
+            return data;
         }
 
-        public IEnumerable<MessageViewModel> GetMessageHistory(string roomName)
+        public async Task<IEnumerable<MessageViewModel>> GetMessageHistory(string roomName)
         {
-            var messageHistory = _context.Messages.Where(m => m.ToRoom.Name == roomName)
+            var cacheKey = "Room " + roomName;
+            var dataCache = _distributedCache.Get<IEnumerable<MessageViewModel>>(cacheKey);
+
+            var degisken =new List<MessageViewModel>();
+            if (dataCache == null)
+            {
+                var data  = _context.Messages.Where(m => m.ToRoom.Name == roomName)
                     .Include(m => m.FromUser)
                     .Include(m => m.ToRoom)
                     .OrderByDescending(m => m.Timestamp)
                     .Take(20)
                     .AsEnumerable()
-                    .Reverse()
-                    .ToList();
+                    .Reverse().ToList();
 
-            return _mapper.Map<IEnumerable<Message>, IEnumerable<MessageViewModel>>(messageHistory);
+                foreach (var item in data)
+                {
+                    degisken.Add(new MessageViewModel()
+                    {
+                        Content = item.Content,
+                        From=item.FromUser.FullName,
+                        Timestamp=item.Timestamp.ToString(),
+                        To=item.ToRoom.Name
+                    });
+                }
+                   
+                
+                await _distributedCache.SetDataAsync(cacheKey, degisken.AsEnumerable(), 10);
+                return degisken.AsEnumerable();
+            }
+            return dataCache;
         }
 
         public override Task OnConnectedAsync()

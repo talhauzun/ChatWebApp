@@ -49,8 +49,8 @@ namespace ChatWebApp
             services.AddControllers();
             services.AddSignalR();
 
-            services.AddSingleton<IConnectionMultiplexer>(
-            ConnectionMultiplexer.Connect("127.0.0.1:6379"));
+            services.AddStackExchangeRedisCache(options => options.Configuration = "localhost:6379,DefaultDatabase=2");
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
