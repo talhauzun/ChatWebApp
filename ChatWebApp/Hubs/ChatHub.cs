@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -56,12 +55,18 @@ namespace ChatWebApp.Hubs
                     _context.Messages.Add(msg);
                     _context.SaveChanges();
 
+
                     var cacheKey = "Room " + roomName;
+                    var dataCache = _distributedCache.Get<List<MessageViewModel>>(cacheKey);
+                    dataCache.Add(_mapper.Map<Message, MessageViewModel>(msg));
                     await _distributedCache.RemoveAsync(cacheKey);
+                    await _distributedCache.SetDataAsync(cacheKey, dataCache, 10);
 
                     // Broadcast the message
                     var messageViewModel = _mapper.Map<Message, MessageViewModel>(msg);
                     await Clients.Group(roomName).SendAsync("newMessage", messageViewModel);
+
+                  
                 }
             }
             catch (Exception)
@@ -206,32 +211,17 @@ namespace ChatWebApp.Hubs
         {
             var cacheKey = "Room " + roomName;
             var dataCache = _distributedCache.Get<IEnumerable<MessageViewModel>>(cacheKey);
-
-            var degisken =new List<MessageViewModel>();
             if (dataCache == null)
             {
-                var data  = _context.Messages.Where(m => m.ToRoom.Name == roomName)
+               var data = _context.Messages.Where(m => m.ToRoom.Name == roomName)
                     .Include(m => m.FromUser)
                     .Include(m => m.ToRoom)
                     .OrderByDescending(m => m.Timestamp)
                     .Take(20)
                     .AsEnumerable()
-                    .Reverse().ToList();
-
-                foreach (var item in data)
-                {
-                    degisken.Add(new MessageViewModel()
-                    {
-                        Content = item.Content,
-                        From=item.FromUser.FullName,
-                        Timestamp=item.Timestamp.ToString(),
-                        To=item.ToRoom.Name
-                    });
-                }
-                   
-                
-                await _distributedCache.SetDataAsync(cacheKey, degisken.AsEnumerable(), 10);
-                return degisken.AsEnumerable();
+                    .Reverse();
+                dataCache = _mapper.Map<IEnumerable<Message>, IEnumerable<MessageViewModel>>(data);
+                await _distributedCache.SetDataAsync(cacheKey, dataCache, 10);
             }
             return dataCache;
         }
